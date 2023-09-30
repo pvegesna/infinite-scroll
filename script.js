@@ -7,21 +7,21 @@ const loader = document.getElementById('loader');
 
 let apiQuotes = [];
 
-// Show Loading
-function loading() {
+function showLoadingSpinner() {
     loader.hidden = false;
     quoteContainer.hidden = true;
 }
 
-// Hide Loading
-function complete() {
-    quoteContainer.hidden = false;
-    loader.hidden = true;
+function removeLoadingSpinner() {
+    if (!loader.hidden) {
+        quoteContainer.hidden = false;
+        loader.hidden = true;
+    }
 }
 
 //  Show New Quote
 function newQuote() {
-    loading();
+    showLoadingSpinner();
     //  Pick a random quote from apiQuotes array
     const quote = apiQuotes[Math.floor(Math.random() * apiQuotes.length)];
     // Check if author field is blank and replace it with 'Unknown'
@@ -30,21 +30,20 @@ function newQuote() {
     } else {
         authorText.textContent = quote.author;
     }
-    
     // Check Quote length to determine styling
     if (quote.text.length > 90) {
         quoteText.classList.add('long-quote');
     } else {
         quoteText.classList.remove('long-quote');
     }
-    // Set Quote, Hide Loading
     quoteText.textContent = quote.text;
-    complete();
+    removeLoadingSpinner();
 }
 
 // Get Quotes From API
 async function getQuotes() {
-    loading();
+    showLoadingSpinner();
+    // Use Proxy URL to avoid CORS errors.
     const proxyUrl ='https://cors-anywhere.herokuapp.com/';
     const apiUrl = "https://jacintodesign.github.io/quotes-api/data/quotes.json";
     try {
@@ -52,8 +51,7 @@ async function getQuotes() {
         apiQuotes = await response.json();
         newQuote();
     } catch (error) {
-        newQuote();
-        // handle errors here
+        console.log(error);
     }
 }
 
