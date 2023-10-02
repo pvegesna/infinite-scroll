@@ -1,69 +1,86 @@
-const quoteContainer = document.getElementById('quote-container');
-const quoteText = document.getElementById('quote');
-const authorText = document.getElementById('author');
-const twitterBtn = document.getElementById('twitter');
-const newQuoteBtn = document.getElementById('new-quote');
+const imageContainer = document.getElementById('image-container');
 const loader = document.getElementById('loader');
 
-let apiQuotes = [];
+let ready = false;
+let imagesLoaded = 0;
+let totalImages = 0;
+let photosArray = [];
 
-function showLoadingSpinner() {
+function showLoader() {
     loader.hidden = false;
-    quoteContainer.hidden = true;
-}
+};
+function disableLoader() {
+    loader.hidden = true;
+};
 
-function removeLoadingSpinner() {
-    if (!loader.hidden) {
-        quoteContainer.hidden = false;
-        loader.hidden = true;
+// Unsplash API
+const count = 10;
+const apiKey = 'API_KEY';
+const apiUrl = `https://api.unsplash.com/photos/random?client_id=${apiKey}&count=${10}`;
+
+// Check if all the images were loaded
+function imageLoaded() {
+    console.log('image loaded');
+    imageLoaded++;
+    if (imageLoaded == totalImages) {
+        ready = true;
+        console.log('ready = ', ready);
     }
 }
 
-//  Show New Quote
-function newQuote() {
-    showLoadingSpinner();
-    //  Pick a random quote from apiQuotes array
-    const quote = apiQuotes[Math.floor(Math.random() * apiQuotes.length)];
-    // Check if author field is blank and replace it with 'Unknown'
-    if (!quote.author) {
-        authorText.textContent = 'Unknown';
-    } else {
-        authorText.textContent = quote.author;
-    }
-    // Check Quote length to determine styling
-    if (quote.text.length > 90) {
-        quoteText.classList.add('long-quote');
-    } else {
-        quoteText.classList.remove('long-quote');
-    }
-    quoteText.textContent = quote.text;
-    removeLoadingSpinner();
-}
+// Helper function to set attributes on DOM elements
+function setAttributes(element, attributes) {
+    for (const key in attributes) {
+        element.setAttribute(key, attributes[key]);
+    };
+};
 
-// Get Quotes From API
-async function getQuotes() {
-    showLoadingSpinner();
-    // Use Proxy URL to avoid CORS errors.
-    const proxyUrl ='https://cors-anywhere.herokuapp.com/';
-    const apiUrl = "https://jacintodesign.github.io/quotes-api/data/quotes.json";
+// Adds links & photos to photos array and adds to DOM.
+function displayPhotos() {
+    totalImages = photosArray.length;
+    photosArray.forEach((photo) => {
+        // Create <a> to link to Unsplash
+        const item = document.createElement('a');
+        setAttributes(item, {
+            href: photo.links.html,
+            target: '_blank',
+        });
+        // Create img tag for photo
+        const img = document.createElement('img');
+        setAttributes(item, {
+            src: photo.urls.regular,
+            alt: photo.alt_description,
+            title: photo.alt_description,
+        });
+        // Check when loading is finished
+        img.addEventListener('load', imageLoaded);
+        // Put image inside <a>. then put both in image container element
+        item.appendChild(img);
+        imageContainer.appendChild(item);
+    });
+};
+
+// Get Photos from Unsplash
+async function getPhotos() {
     try {
-        const response = await fetch(proxyUrl + apiUrl);
-        apiQuotes = await response.json();
-        newQuote();
+        const response = await fetch(apiUrl);
+        photosArray = await response.json();
+        // disableLoader();
+        displayPhotos();
+        console.log(imageContainer);
     } catch (error) {
-        console.log(error);
+        // catch error
+    };
+};
+
+// Check to see if scrolling near bottom
+window.addEventListener('scroll', () => {
+    if (window.innerHeight + window.scrollY >= document.body.offsetHeight-1000 && ready) {
+        ready = false;
+        getPhotos();
     }
-}
-
-// Tweet Quote
-function tweetQuote() {
-    const twitterUrl = `https://twitter.com/intent/tweet?text=${quoteText.textContent} - ${authorText.textContent}`;
-    window.open(twitterUrl, '_blank');
-}
-
-// Event Listeners
-newQuoteBtn.addEventListener('click', newQuote);
-twitterBtn.addEventListener('click', tweetQuote);
+});
 
 // On Load
-getQuotes();
+disableLoader();
+getPhotos();
